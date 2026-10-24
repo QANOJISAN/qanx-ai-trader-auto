@@ -1,0 +1,8 @@
+{
+  "name": "Auth Lock Vault v2",
+  "short_name": "VaultV2",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#070d19",
+  "theme_color": "#0b1220"
+}

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="theme-color" content="#0b1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<title>Auth Lock Vault</title>
+<style>
+  :root {
+    --bg-main: #070d19;
+    --bg-card: #10192b;
+    --bg-inner: #162238;
+    --border: #233454;
+    --accent: #0ea5e9;
+    --text-main: #f1f5f9;
+    --text-sub: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { background: radial-gradient(circle at top, #0f203c 0%, var(--bg-main) 70%); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; }
+  .lock-card { width: 100%; max-width: 410px; background: rgba(16, 25, 43, 0.94); border: 1px solid var(--border); border-radius: 22px; padding: 28px 22px; box-shadow: 0 20px 50px rgba(0,0,0,0.65); }
+  .lock-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .logo-box { width: 54px; height: 54px; border-radius: 15px; background: linear-gradient(135deg, #0284c7, #0d9488); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; color: #fff; flex-shrink: 0; box-shadow: 0 4px 14px rgba(14,165,233,0.35); }
+  .lock-title { font-size: 20px; font-weight: 800; line-height: 1.3; color: #fff; }
+  .lock-sub { font-size: 12px; color: var(--text-sub); margin-top: 4px; line-height: 1.4; }
+  .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+  .sec-pill { font-size: 11px; font-weight: 700; color: #38bdf8; background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); padding: 5px 11px; border-radius: 8px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+  .field-label { font-size: 13px; font-weight: 700; color: #cbd5e1; margin-bottom: 8px; display: block; }
+  .input-wrap { position: relative; margin-bottom: 16px; }
+  .pass-input { width: 100%; background: #091120; border: 1.5px solid #1e3a5f; border-radius: 12px; padding: 14px 44px 14px 14px; color: #fff; font-size: 15px; outline: none; }
+  .pass-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(14,165,233,0.2); }
+  .eye-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-sub); font-size: 18px; cursor: pointer; padding: 4px; }
+  .remember-box { background: rgba(22, 34, 56, 0.75); border: 1px solid var(--border); border-radius: 12px; padding: 13px; display: flex; align-items: flex-start; gap: 11px; margin-bottom: 20px; cursor: pointer; }
+  .remember-box input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--accent); flex-shrink: 0; }
+  .rem-title { font-size: 13px; font-weight: 700; color: #e2e8f0; line-height: 1.4; }
+  .rem-desc { font-size: 11.5px; color: var(--text-sub); margin-top: 5px; line-height: 1.45; }
+  .unlock-btn { width: 100%; background: linear-gradient(90deg, #0284c7, #0d9488); border: none; border-radius: 12px; padding: 15px; color: #fff; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 6px 20px rgba(13, 148, 136, 0.35); display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .err-msg { color: #f87171; font-size: 12.5px; font-weight: 600; margin-top: 12px; text-align: center; display: none; }
+  .lock-footer { border-top: 1px solid var(--border); margin-top: 22px; padding-top: 14px; font-size: 11px; color: #64748b; line-height: 1.55; }
+  #appView { display: none; width: 100%; max-width: 600px; padding-bottom: 36px; }
+  .top-bar { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .top-row1 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .app-title { font-size: 16px; font-weight: 800; color: #fff; }
+  .btn-group { display: flex; gap: 6px; }
+  .mini-btn { background: var(--bg-inner); border: 1px solid var(--border); color: #e2e8f0; font-size: 11.5px; font-weight: 700; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+  .mini-btn.lock { border-color: rgba(245,158,11,0.4); color: #fbbf24; }
+  .status-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .st-badge { font-size: 10.5px; font-weight: 800; padding: 4px 9px; border-radius: 6px; }
+  .st-live { background: rgba(239,68,68,0.18); color: #fca5a5; border: 1px solid rgba(239,68,68,0.4); }
+  .st-run { background: rgba(16,185,129,0.18); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.4); }
+  .st-chain { background: rgba(14,165,233,0.15); color: #7dd3fc; border: 1px solid rgba(14,165,233,0.35); }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 15px; margin-bottom: 12px; }
+  .card-title { font-size: 13px; font-weight: 800; color: #cbd5e1; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .prog-track { width: 100%; height: 11px; background: #091120; border-radius: 99px; overflow: hidden; margin: 8px 0; border: 1px solid var(--border); }
+  .prog-fill { height: 100%; background: linear-gradient(90deg, #10b981, #0ea5e9); border-radius: 99px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .metric-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 13px; }
+  .m-label { font-size: 11px; color: var(--text-sub); font-weight: 700; }
+  .m-val { font-size: 18px; font-weight: 800; margin: 5px 0 3px; color: #fff; }
+  .m-sub { font-size: 10.5px; color: #64748b; }
+  .tier-row { border-top: 1px solid rgba(35,52,84,0.7); padding: 10px 0; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+  .tier-row:first-of-type { border-top: none; padding-top: 4px; }
+  .tier-name { font-weight: 800; color: #e2e8f0; }
+  .tier-sub { font-size: 10.5px; color: var(--text-sub); margin-top: 2px; }
+  .tier-right { text-align: right; font-family: ui-monospace, monospace; }
+</style>
+</head>
+<body>
+
+<div class="lock-card" id="lockView">
+  <div class="lock-header">
+    <div class="logo-box">QT</div>
+    <div>
+      <div class="lock-title">🔒 AI Trader v2 認証ロック</div>
+      <div class="lock-sub">ゼロ知識クライアント復号型 全自動スイング＆防衛台帳</div>
+    </div>
+  </div>
+  <div class="badge-row">
+    <span class="sec-pill">AES-256-GCM</span>
+    <span class="sec-pill">PBKDF2-SHA256 (600,000回)</span>
+    <span class="sec-pill">noindex / 完全暗号化</span>
+  </div>
+  <label class="field-label" for="passInput">復号パスワードを入力</label>
+  <div class="input-wrap">
+    <input type="password" id="passInput" class="pass-input" placeholder="パスワードを入力..." autocomplete="current-password">
+    <button type="button" class="eye-btn" id="eyeBtn" aria-label="表示切替">👁️</button>
+  </div>
+  <label class="remember-box">
+    <input type="checkbox" id="remCheck" checked>
+    <div>
+      <div class="rem-title">✅ この端末（ブラウザ）にロック解除状態を記憶する</div>
+      <div class="rem-desc">次回からホーム画面アイコンをタップするだけで0.5秒で即起動します（ヘッダーの「🔒 今すぐロック」でいつでも解除可能）</div>
+    </div>
+  </label>
+  <button type="button" class="unlock-btn" id="unlockBtn">🔓 ロック解除して台帳を開く</button>
+  <div class="err-msg" id="errMsg">❌ パスワードが正しくありません。</div>
+  <div class="lock-footer">
+    ※ 本HTMLには平文の取引データ・銘柄名・ウォレットアドレスは1文字も含まれていません。パスワードから導出した鍵によりブラウザのメモリ上（Web Crypto API）でのみ復号されます。
+  </div>
+</div>
+
+<div id="appView"></div>
+
+<script>
+const ENC_PAYLOAD = {"kdf": "PBKDF2-SHA256", "iter": 600000, "alg": "AES-256-GCM", "padded_bytes": 8192, "salt": "eIne0vlOp7QW1gBNJzZBSw==", "iv": "gsrz6752Af++nOf8", "ct": "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"};
+const STORAGE_KEY = "qanx_v2_auto_pwa_pass_v1";
+
+function b64ToBytes(b64) {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return arr;
+}
+
+async function decryptData(password) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveKey"]
+  );
+  const key = await crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: b64ToBytes(ENC_PAYLOAD.salt), iterations: ENC_PAYLOAD.iter, hash: "SHA-256" },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["decrypt"]
+  );
+  const plainBuf = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: b64ToBytes(ENC_PAYLOAD.iv) },
+    key,
+    b64ToBytes(ENC_PAYLOAD.ct)
+  );
+  return JSON.parse(new TextDecoder().decode(plainBuf));
+}
+
+function fmtNum(n, d = 0) {
+  const v = Number(n || 0);
+  return v.toLocaleString("ja-JP", { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+
+function renderDashboard(data) {
+  const ui = data._ui || {};
+  const st = data.state || {};
+  const val = data.valuation || {};
+  const bs = data.book_split || {};
+  const sched = data.schedule || {};
+  const tiers = data.tiers || [];
+  const cbs = data.circuit_breakers || [];
+
+  const mode = st.execution_mode || "LIVE";
+  const status = st.system_status || "RUNNING";
+  const priceJpy = Number(val.current_price_jpy || st.last_price_jpy || 3.2);
+  const totalValueJpy = Number(val.total_effective_equity_jpy || val.total_equity_jpy || ui.total_value_jpy || 0);
+  const goalPct = Math.min(100, (totalValueJpy / 40000000) * 100);
+
+  const coreBook = Number(bs.core_book_jpy || ui.core_book_jpy || 0);
+  const aiBook = Number(bs.ai_book_jpy || ui.ai_book_jpy || 0);
+  const totalBook = Number(bs.total_book_jpy || (coreBook + aiBook));
+  const pCost = Number(st.p_cost_jpy || ui.p_cost_jpy || 0);
+  const pEntry = Number(st.p_entry_jpy || ui.p_entry_jpy || 0);
+
+  const tierList = Array.isArray(tiers) ? tiers : Object.values(tiers || {});
+  const coreTiers = tierList.filter(t => String(t.tier_id || t.tranche_id || t.id || "").startsWith("CORE"));
+  const aiTiers = tierList.filter(t => String(t.tier_id || t.tranche_id || t.id || "").startsWith("TIER"));
+  const cbList = Array.isArray(cbs) ? cbs : Object.entries(cbs || {}).map(([k, v]) => (typeof v === "object" ? {level: k, ...v} : {level: k, status: v}));
+
+  const app = document.getElementById("appView");
+  app.innerHTML = `
+    <div class="top-bar">
+      <div class="top-row1">
+        <div class="app-title">💎 ${ui.app_title || 'AI Trader v2 Auto'}</div>
+        <div class="btn-group">
+          <button class="mini-btn" onclick="location.href=location.pathname+'?t='+Date.now()">🔄 更新</button>
+          <button class="mini-btn lock" id="lockNowBtn">🔒 今すぐロック</button>
+        </div>
+      </div>
+      <div class="status-pills">
+        <span class="st-badge st-live">MODE: ${mode}</span>
+        <span class="st-badge st-chain">BSC_BEP20 (PANCAKE_V2)</span>
+        <span class="st-badge st-run">STATUS: ${status}</span>
+      </div>
+      <div style="font-size:11px;color:#94a3b8;">同期時刻: ${data.generated_at || "-"}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>🎯 税引後純キャッシュ 4,000万円 目標進捗</span>
+        <span style="color:#34d399;font-size:11px;">恒等式: ${fmtNum(totalBook)}円 (完全一致)</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" style="width:${goalPct.toFixed(2)}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;color:#cbd5e1;">
+        <span>現在有効資産: <b>${fmtNum(totalValueJpy)} 円</b> (${goalPct.toFixed(2)}%)</span>
+        <span>目標: 40,000,000 円</span>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="metric-box">
+        <div class="m-label">① 納税準備枠 (55.945%隔離)</div>
+        <div class="m-val" style="color:#f87171;">${fmtNum(st.tax_reserve_jpy || 0)} 円</div>
+        <div class="m-sub">支払済税金累計: ${fmtNum(st.tax_paid_jpy || 0)} 円</div>
+      </div>
+      <div class="metric-box">
+        <div class="m-label">② 純キャッシュ確定枠</div>
+        <div class="m-val" style="color:#34d399;">${fmtNum(st.net_cash_jpy || 0)} 円</div>
+        <div class="m-sub">Cold Vault隔離済: ${fmtNum(st.swept_vault_jpy || 0)} 円</div>
+      </div>
+      <div class="metric-box">
+        <div class="m-label">③ 買戻し待機枠 (AIホット残)</div>
+        <div class="m-val" style="color:#38bdf8;">${fmtNum(st.rebuy_pool_jpy || 0)} 円</div>
+        <div class="m-sub">DUST: ${st.dust_status || "CLEAN"}</div>
+      </div>
+      <div class="metric-box">
+        <div class="m-label">📊 2系列取得単価 (P_cost)</div>
+        <div class="m-val" style="font-size:16px;">${pCost.toFixed(6)} 円</div>
+        <div class="m-sub">現在: <b style="color:#e2e8f0;">${priceJpy.toFixed(4)}円</b> (原価差: <span style="color:${priceJpy >= pCost ? '#34d399' : '#f87171'};">${(priceJpy - pCost >= 0 ? '+' : '') + (priceJpy - pCost).toFixed(4)}円 / ${(((priceJpy - pCost) / pCost) * 100).toFixed(1)}%</span>)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>🔒 ${ui.core_header || 'Wallet ①: コア枠'} (簿価 ${fmtNum(coreBook)}円)</span>
+      </div>
+      <div style="font-size:11px;color:#fbbf24;margin-bottom:8px;">
+        🔒 2028/01/01 00:00:00 JST 解禁まで完全タイムロック中 (残 ${fmtNum(sched.days_until_unlock || 434, 1)} 日)
+      </div>
+      ${coreTiers.map(t => `
+        <div class="tier-row">
+          <div>
+            <div class="tier-name">${t.tier_id || t.tranche_id || t.id || ""}</div>
+            <div class="tier-sub">${t.label || "2028年解禁ロック枠"}</div>
+          </div>
+          <div class="tier-right">
+            <div style="color:#fff;font-weight:700;">${fmtNum((t.qty_qanx ?? t.current_qty_qanx ?? t.qty ?? 0))} 枚 (${fmtNum((t.book_jpy ?? t.book_value_jpy ?? t.allocated_book_jpy ?? 0))}円)</div>
+            <div style="font-size:10.5px;color:#fbbf24;">@${Number((t.target_jpy ?? t.target_price_jpy ?? t.unlock_price_jpy ?? 0)||0).toFixed(2)}円 / ${t.status}</div>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>⚡ ${ui.ai_header || 'Wallet ②: AIスイング枠'} (簿価 ${fmtNum(aiBook)}円)</span>
+      </div>
+      ${aiTiers.map(t => `
+        <div class="tier-row">
+          <div>
+            <div class="tier-name">${t.tier_id || t.tranche_id || t.id || ""}</div>
+            <div class="tier-sub">${t.label || "AI自動スイング枠"}</div>
+          </div>
+          <div class="tier-right">
+            <div style="color:#fff;font-weight:700;">${fmtNum((t.qty_qanx ?? t.current_qty_qanx ?? t.qty ?? 0))} 枚 (${fmtNum((t.book_jpy ?? t.book_value_jpy ?? t.allocated_book_jpy ?? 0))}円)</div>
+            <div style="font-size:10.5px;color:#34d399;">@${Number((t.target_jpy ?? t.target_price_jpy ?? t.unlock_price_jpy ?? 0)||0).toFixed(2)}円 / ${t.status}</div>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+
+    <div class="card">
+      <div class="card-title">🛡️ 5段階サーキットブレーカー (L1〜L5) 防衛状態</div>
+      ${cbList.map(c => `
+        <div class="tier-row">
+          <div>
+            <div class="tier-name">${c.level}: ${c.title || c.name || ""}</div>
+            <div class="tier-sub">${c.detail || "正常監視中"}</div>
+          </div>
+          <div class="tier-right">
+            <span class="st-badge st-run">${c.status || "CLEAR"}</span>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  document.getElementById("lockView").style.display = "none";
+  app.style.display = "block";
+  document.getElementById("lockNowBtn").addEventListener("click", () => {
+    localStorage.removeItem(STORAGE_KEY);
+    app.style.display = "none";
+    app.innerHTML = "";
+    document.getElementById("passInput").value = "";
+    document.getElementById("lockView").style.display = "block";
+  });
+}
+
+async function tryUnlock(pass, saveIfOk) {
+  const errEl = document.getElementById("errMsg");
+  errEl.style.display = "none";
+  try {
+    const data = await decryptData(pass);
+    if (saveIfOk) {
+      localStorage.setItem(STORAGE_KEY, pass);
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+    renderDashboard(data);
+  } catch (e) {
+    localStorage.removeItem(STORAGE_KEY);
+    errEl.style.display = "block";
+  }
+}
+
+document.getElementById("eyeBtn").addEventListener("click", () => {
+  const inp = document.getElementById("passInput");
+  inp.type = inp.type === "password" ? "text" : "password";
+});
+
+document.getElementById("unlockBtn").addEventListener("click", () => {
+  const pass = document.getElementById("passInput").value;
+  const rem = document.getElementById("remCheck").checked;
+  if (pass) tryUnlock(pass, rem);
+});
+
+document.getElementById("passInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") document.getElementById("unlockBtn").click();
+});
+
+window.addEventListener("DOMContentLoaded", () => {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    tryUnlock(saved, true);
+  }
+});
+</script>
+</body>
+</html>
